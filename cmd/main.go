@@ -19,6 +19,8 @@ package main
 import (
 	"context"
 	"flag"
+	subscriptionv1alpha1 "github.com/kyma-project/kyma/components/eventing-controller/api/v1alpha1"
+	subscriptionv1alpha2 "github.com/kyma-project/kyma/components/eventing-controller/api/v1alpha2"
 	"log"
 	"os"
 
@@ -155,10 +157,19 @@ func main() { //nolint:funlen // main function needs to initialize many object
 	)
 
 	if err = (eventingReconciler).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "NATS")
+		setupLog.Error(err, "unable to create controller", "controller", "Eventing")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
+
+	// setup webhooks
+	if err = (&subscriptionv1alpha1.Subscription{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create webhook")
+	}
+
+	if err = (&subscriptionv1alpha2.Subscription{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create webhook")
+	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
